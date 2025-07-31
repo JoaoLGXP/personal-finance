@@ -1,201 +1,176 @@
-// src/context/FinancialContext.js
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FinancialContext = createContext();
 
 const initialState = {
-  salary: '',
-  expenses: [],
-  categories: {
-    'Moradia': { recommended: 30, color: '#3B82F6' },
-    'Alimentação': { recommended: 15, color: '#10B981' },
-    'Transporte': { recommended: 15, color: '#F59E0B' },
-    'Saúde': { recommended: 10, color: '#EF4444' },
-    'Educação': { recommended: 5, color: '#8B5CF6' },
-    'Lazer': { recommended: 10, color: '#EC4899' },
-    'Outros': { recommended: 15, color: '#6B7280' }
-  }
+  transactions: [], // NOVO: Unifica rendas e despesas. type: 'income' | 'expense'
+  recurringTransactions: [], // NOVO: Guarda os modelos de transações recorrentes
+  categories: [],
+  dateFilter: {
+    month: new Date().getMonth(),
+    year: new Date().getFullYear(),
+  },
 };
 
 function financialReducer(state, action) {
   switch (action.type) {
-    case 'SET_SALARY':
-      return { ...state, salary: action.payload };
-    case 'ADD_EXPENSE':
-      return { 
-        ...state, 
-        expenses: [...state.expenses, { ...action.payload, id: Date.now() }] 
-      };
-    case 'REMOVE_EXPENSE':
-      return {
-        ...state,
-        expenses: state.expenses.filter(expense => expense.id !== action.payload)
-      };
-    case 'LOAD_DATA':
-      return { ...state, ...action.payload };
-    case 'CLEAR_ALL':
-      return { ...initialState };
-    default:
-      return state;
+    case 'ADD_TRANSACTION':
+      return { ...state, transactions: [...state.transactions, { ...action.payload, id: Date.now() }] };
+    case 'REMOVE_TRANSACTION':
+      return { ...state, transactions: state.transactions.filter(t => t.id !== action.payload) };
+    
+    // Ações de Transações Recorrentes
+    case 'ADD_RECURRING_TRANSACTION':
+      return { ...state, recurringTransactions: [...state.recurringTransactions, { ...action.payload, id: Date.now() }] };
+    case 'REMOVE_RECURRING_TRANSACTION':
+      return { ...state, recurringTransactions: state.recurringTransactions.filter(rt => rt.id !== action.payload) };
+    
+    // Ações de Categoria
+    case 'ADD_CATEGORY': return { ...state, categories: [...state.categories, { ...action.payload, id: Date.now() }] };
+    case 'UPDATE_CATEGORY': return { ...state, categories: state.categories.map(cat => cat.id === action.payload.id ? { ...cat, ...action.payload.data } : cat) };
+    case 'REMOVE_CATEGORY': return { ...state, categories: state.categories.filter(cat => cat.id !== action.payload), transactions: state.transactions.filter(t => t.categoryId !== action.payload) };
+    
+    // Outras ações
+    case 'SET_DATE_FILTER': return { ...state, dateFilter: action.payload };
+    case 'LOAD_DATA': return { ...state, ...action.payload };
+    case 'CLEAR_ALL': return { ...initialState, dateFilter: state.dateFilter };
+    default: return state;
   }
 }
 
 export function FinancialProvider({ children }) {
   const [state, dispatch] = useReducer(financialReducer, initialState);
 
-  // Carregar dados do AsyncStorage
+  // Lógica para carregar e gerar transações recorrentes
   useEffect(() => {
-    loadData();
+    const loadAndProcessData = async () => {
+      try {
+        const savedData = await AsyncStorage.getItem('financialData');
+        let dataToLoad = savedData ? JSON.parse(savedData) : {};
+
+        // Normalização de dados para a nova estrutura (se vier de uma versão antiga)
+        if (dataToLoad.expenses || dataToLoad.incomes) {
+            dataToLoad.transactions = [
+                ...(dataToLoad.expenses?.map(e => ({...e, type: 'expense'})) || []),
+                ...Object.entries(dataToLoad.incomes || {}).map(([key, value]) => {
+                    const [year, month] = key.split('-');
+                    return { id: `income-${key}`, type: 'income', amount: parseFloat(value), description: 'Renda Mensal', date: new Date(year, month, 1).toISOString() }
+                })
+            ];
+            delete dataToLoad.expenses;
+            delete dataToLoad.incomes;
+        }
+
+        if (!dataToLoad.categories || dataToLoad.categories.length === 0) {
+            dataToLoad.categories = [
+                { id: 1, name: 'Moradia', color: '#3B82F6' },
+                { id: 2, name: 'Alimentação', color: '#10B981' },
+                { id: 3, name: 'Transporte', color: '#F59E0B' },
+                { id: 4, name: 'Salário', color: '#14B8A6' },
+            ];
+        }
+
+        if (!dataToLoad.transactions) dataToLoad.transactions = [];
+        if (!dataToLoad.recurringTransactions) dataToLoad.recurringTransactions = [];
+
+        // LÓGICA DE GERAÇÃO DE RECORRÊNCIAS
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        let generatedTransactions = false;
+
+        dataToLoad.recurringTransactions.forEach(rt => {
+            const lastInstance = rt.lastInstance || { year: 0, month: 0 };
+            const shouldGenerate = lastInstance.year < currentYear || (lastInstance.year === currentYear && lastInstance.month < currentMonth);
+
+            if (shouldGenerate) {
+                const newTransaction = {
+                    ...rt,
+                    id: Date.now() + Math.random(), // ID único para a instância
+                    date: new Date(currentYear, currentMonth, rt.dayOfMonth).toISOString(),
+                    isRecurringInstance: true, // Flag para identificar
+                };
+                delete newTransaction.lastInstance;
+                delete newTransaction.dayOfMonth;
+                delete newTransaction.frequency;
+
+                const alreadyExists = dataToLoad.transactions.some(t => {
+                   const tDate = new Date(t.date);
+                   return t.description === newTransaction.description && tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+                });
+
+                if(!alreadyExists) {
+                    dataToLoad.transactions.push(newTransaction);
+                    rt.lastInstance = { year: currentYear, month: currentMonth };
+                    generatedTransactions = true;
+                }
+            }
+        });
+
+        dispatch({ type: 'LOAD_DATA', payload: dataToLoad });
+      } catch (error) { console.error('Erro ao carregar dados:', error); }
+    };
+    loadAndProcessData();
   }, []);
 
-  // Salvar dados no AsyncStorage sempre que o estado mudar
+  // Salvar dados
   useEffect(() => {
-    saveData();
-  }, [state.salary, state.expenses]);
-
-  const loadData = async () => {
-    try {
-      const savedData = await AsyncStorage.getItem('financialData');
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        dispatch({ type: 'LOAD_DATA', payload: parsedData });
-      }
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-    }
-  };
-
-  const saveData = async () => {
-    try {
-      const dataToSave = {
-        salary: state.salary,
-        expenses: state.expenses
-      };
-      await AsyncStorage.setItem('financialData', JSON.stringify(dataToSave));
-    } catch (error) {
-      console.error('Erro ao salvar dados:', error);
-    }
-  };
-
-  const setSalary = (salary) => {
-    dispatch({ type: 'SET_SALARY', payload: salary });
-  };
-
-  const addExpense = (expense) => {
-    dispatch({ type: 'ADD_EXPENSE', payload: expense });
-  };
-
-  const removeExpense = (id) => {
-    dispatch({ type: 'REMOVE_EXPENSE', payload: id });
-  };
-
-  const clearAll = () => {
-    dispatch({ type: 'CLEAR_ALL' });
-    AsyncStorage.removeItem('financialData');
-  };
-
-  const getFinancialAnalysis = () => {
-    const salaryNum = parseFloat(state.salary) || 0;
-    const totalExpenses = state.expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const remaining = salaryNum - totalExpenses;
-    const savingsPercentage = salaryNum > 0 ? (remaining / salaryNum) * 100 : 0;
-
-    const categoryAnalysis = Object.keys(state.categories).map(category => {
-      const categoryExpenses = state.expenses
-        .filter(exp => exp.category === category)
-        .reduce((sum, exp) => sum + exp.amount, 0);
-      
-      const percentage = salaryNum > 0 ? (categoryExpenses / salaryNum) * 100 : 0;
-      const recommended = state.categories[category].recommended;
-      const recommendedAmount = (salaryNum * recommended) / 100;
-      
-      return {
-        category,
-        amount: categoryExpenses,
-        percentage: percentage,
-        recommended,
-        recommendedAmount,
-        status: percentage > recommended ? 'above' : percentage < recommended * 0.5 ? 'below' : 'ok',
-        color: state.categories[category].color
-      };
-    });
-
-    return {
-      salary: salaryNum,
-      totalExpenses,
-      remaining,
-      savingsPercentage,
-      categoryAnalysis
+    const saveData = async () => {
+      try {
+        const dataToSave = { transactions: state.transactions, recurringTransactions: state.recurringTransactions, categories: state.categories };
+        await AsyncStorage.setItem('financialData', JSON.stringify(dataToSave));
+      } catch (error) { console.error('Erro ao salvar dados:', error); }
     };
-  };
-
-  const getSuggestions = () => {
-    const analysis = getFinancialAnalysis();
-    const suggestions = [];
-    
-    if (analysis.savingsPercentage < 20 && analysis.salary > 0) {
-      suggestions.push({
-        type: 'warning',
-        title: 'Aumente sua reserva',
-        message: `Você está economizando apenas ${analysis.savingsPercentage.toFixed(1)}%. O ideal é economizar pelo menos 20% da renda.`,
-        icon: 'warning'
-      });
+    if (state !== initialState) {
+      saveData();
     }
-
-    analysis.categoryAnalysis.forEach(cat => {
-      if (cat.status === 'above' && cat.amount > 0) {
-        suggestions.push({
-          type: 'alert',
-          title: `Gastos elevados em ${cat.category}`,
-          message: `Você está gastando ${cat.percentage.toFixed(1)}% em ${cat.category}. O recomendado é ${cat.recommended}%. Considere reduzir em R$ ${(cat.amount - cat.recommendedAmount).toFixed(2)}.`,
-          icon: 'alert-circle'
-        });
-      }
+  }, [state.transactions, state.recurringTransactions, state.categories]);
+  
+  // Memoização para performance
+  const filteredTransactions = useMemo(() => {
+    return state.transactions.filter(t => {
+      const transactionDate = new Date(t.date);
+      return transactionDate.getMonth() === state.dateFilter.month && 
+             transactionDate.getFullYear() === state.dateFilter.year;
     });
+  }, [state.transactions, state.dateFilter]);
 
-    if (analysis.remaining > 0 && analysis.savingsPercentage >= 20) {
-      suggestions.push({
-        type: 'investment',
-        title: 'Oportunidade de Investimento',
-        message: `Você tem R$ ${analysis.remaining.toFixed(2)} disponível. Considere investir em produtos financeiros adequados ao seu perfil.`,
-        icon: 'trending-up'
-      });
-    }
+  // Ações expostas pelo contexto
+  const addTransaction = useCallback((transaction) => dispatch({ type: 'ADD_TRANSACTION', payload: transaction }), []);
+  const removeTransaction = useCallback((id) => dispatch({ type: 'REMOVE_TRANSACTION', payload: id }), []);
+  
+  const addRecurringTransaction = useCallback((rt) => dispatch({ type: 'ADD_RECURRING_TRANSACTION', payload: rt }), []);
+  const removeRecurringTransaction = useCallback((id) => dispatch({ type: 'REMOVE_RECURRING_TRANSACTION', payload: id }), []);
 
-    if (suggestions.length === 0) {
-      suggestions.push({
-        type: 'success',
-        title: 'Parabéns!',
-        message: 'Suas finanças estão equilibradas! Continue mantendo esse controle.',
-        icon: 'checkmark-circle'
-      });
-    }
-
-    return suggestions;
-  };
+  const setDateFilter = useCallback((newFilter) => dispatch({ type: 'SET_DATE_FILTER', payload: newFilter }), []);
+  // ... outras funções (addCategory, etc.)
+  const addCategory = useCallback((category) => dispatch({ type: 'ADD_CATEGORY', payload: category }), []);
+  const updateCategory = useCallback((id, data) => dispatch({ type: 'UPDATE_CATEGORY', payload: { id, data } }), []);
+  const removeCategory = useCallback((id) => dispatch({ type: 'REMOVE_CATEGORY', payload: id }), []);
+  const clearAll = useCallback(() => { AsyncStorage.removeItem('financialData'); dispatch({ type: 'CLEAR_ALL' }); }, []);
+  const getCategoryById = useCallback((id) => state.categories.find(cat => cat.id === id), [state.categories]);
 
   const value = {
     ...state,
-    setSalary,
-    addExpense,
-    removeExpense,
+    filteredTransactions,
+    addTransaction,
+    removeTransaction,
+    addRecurringTransaction,
+    removeRecurringTransaction,
+    setDateFilter,
+    getCategoryById,
     clearAll,
-    getFinancialAnalysis,
-    getSuggestions
+    addCategory,
+    updateCategory,
+    removeCategory,
   };
 
-  return (
-    <FinancialContext.Provider value={value}>
-      {children}
-    </FinancialContext.Provider>
-  );
+  return <FinancialContext.Provider value={value}>{children}</FinancialContext.Provider>;
 }
 
 export function useFinancial() {
   const context = useContext(FinancialContext);
-  if (!context) {
-    throw new Error('useFinancial deve ser usado dentro de um FinancialProvider');
-  }
+  if (!context) { throw new Error('useFinancial deve ser usado dentro de um FinancialProvider'); }
   return context;
 }

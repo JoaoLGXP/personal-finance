@@ -1,39 +1,30 @@
 // App.js
+import 'react-native-gesture-handler'; // IMPORTANTE: Deve ser a primeira linha
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer'; // MUDANÇA
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import DashboardScreen from './src/screens/DashboardScreen';
 import ExpensesScreen from './src/screens/ExpensesScreen';
 import SuggestionsScreen from './src/screens/SuggestionsScreen';
+import CategoriesScreen from './src/screens/CategoriesScreen';
+import RecurringScreen from './src/screens/RecurringScreen';
 import { FinancialProvider } from './src/context/FinancialContext';
+import { DrawerContent } from './src/components/DrawerContent'; // NOVO
 
-const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator(); // MUDANÇA
 
 export default function App() {
   return (
     <FinancialProvider>
+      <StatusBar style="light" />
       <NavigationContainer>
-        <StatusBar style="light" backgroundColor="#3B82F6" />
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName;
-
-              if (route.name === 'Dashboard') {
-                iconName = focused ? 'stats-chart' : 'stats-chart-outline';
-              } else if (route.name === 'Gastos') {
-                iconName = focused ? 'add-circle' : 'add-circle-outline';
-              } else if (route.name === 'Sugestões') {
-                iconName = focused ? 'bulb' : 'bulb-outline';
-              }
-
-              return <Ionicons name={iconName} size={size} color={color} />;
-            },
-            tabBarActiveTintColor: '#3B82F6',
-            tabBarInactiveTintColor: 'gray',
+        <Drawer.Navigator
+          drawerContent={props => <DrawerContent {...props} />} // Usa nosso menu customizado
+          screenOptions={{
+            // Header azul que você gosta, mantido
             headerStyle: {
               backgroundColor: '#3B82F6',
             },
@@ -41,24 +32,53 @@ export default function App() {
             headerTitleStyle: {
               fontWeight: 'bold',
             },
-          })}
+            // Estilos dos itens do menu
+            drawerActiveBackgroundColor: '#3B82F6',
+            drawerActiveTintColor: '#fff',
+            drawerInactiveTintColor: '#333',
+            drawerLabelStyle: {
+              marginLeft: -20,
+              fontSize: 15,
+            }
+          }}
         >
-          <Tab.Screen 
-            name="Dashboard" 
-            component={DashboardScreen}
-            options={{ title: 'Painel Financeiro' }}
+          {/* Nossas telas agora são parte do menu lateral */}
+          <Drawer.Screen 
+            name="Painel Financeiro" 
+            component={DashboardScreen} 
+            options={{
+              drawerIcon: ({ color }) => <Ionicons name="pie-chart-outline" size={22} color={color} />
+            }}
           />
-          <Tab.Screen 
-            name="Gastos" 
-            component={ExpensesScreen}
-            options={{ title: 'Meus Gastos' }}
+          <Drawer.Screen 
+            name="Meus Gastos" 
+            component={ExpensesScreen} 
+            options={{
+              drawerIcon: ({ color }) => <Ionicons name="receipt-outline" size={22} color={color} />
+            }}
           />
-          <Tab.Screen 
-            name="Sugestões" 
-            component={SuggestionsScreen}
-            options={{ title: 'Dicas Financeiras' }}
+          <Drawer.Screen 
+            name="Transações Recorrentes" 
+            component={RecurringScreen} 
+            options={{
+              drawerIcon: ({ color }) => <Ionicons name="repeat-outline" size={22} color={color} />
+            }}
           />
-        </Tab.Navigator>
+          <Drawer.Screen 
+            name="Minhas Categorias" 
+            component={CategoriesScreen} 
+            options={{
+              drawerIcon: ({ color }) => <Ionicons name="pricetags-outline" size={22} color={color} />
+            }}
+          />
+          <Drawer.Screen 
+            name="Dicas Financeiras" 
+            component={SuggestionsScreen} 
+            options={{
+              drawerIcon: ({ color }) => <Ionicons name="bulb-outline" size={22} color={color} />
+            }}
+          />
+        </Drawer.Navigator>
       </NavigationContainer>
     </FinancialProvider>
   );

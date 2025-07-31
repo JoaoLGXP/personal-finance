@@ -1,383 +1,94 @@
 // src/screens/DashboardScreen.js
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Alert
-} from 'react-native';
+// O código é o mesmo da última versão, apenas REMOVEMOS os botões flutuantes (FABs)
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { PieChart } from "react-native-gifted-charts";
 import { useFinancial } from '../context/FinancialContext';
+import DateFilter from '../components/DateFilter';
 
 export default function DashboardScreen() {
-  const { salary, setSalary, getFinancialAnalysis, clearAll } = useFinancial();
-  const [tempSalary, setTempSalary] = useState(salary);
-  const analysis = getFinancialAnalysis();
+    const { filteredTransactions, categories, clearAll } = useFinancial();
+    const [viewMode, setViewMode] = useState('chart');
 
-  const handleSalarySave = () => {
-    setSalary(tempSalary);
-    Alert.alert('Sucesso', 'Salário atualizado com sucesso!');
-  };
+    const analysis = useMemo(() => {
+        const incomes = filteredTransactions.filter(t => t.type === 'income');
+        const expenses = filteredTransactions.filter(t => t.type === 'expense');
+        const totalIncome = incomes.reduce((sum, t) => sum + t.amount, 0);
+        const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
 
-  const handleClearAll = () => {
-    Alert.alert(
-      'Confirmar',
-      'Tem certeza que deseja limpar todos os dados?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Confirmar', onPress: clearAll, style: 'destructive' }
-      ]
+        const categoryAnalysis = categories
+            .filter(cat => cat.name !== 'Salário')
+            .map(cat => {
+                const categoryExpenses = expenses.filter(exp => exp.categoryId === cat.id).reduce((sum, exp) => sum + exp.amount, 0);
+                const percentage = totalExpenses > 0 ? (categoryExpenses / totalExpenses) * 100 : 0;
+                return { name: cat.name, color: cat.color, amount: categoryExpenses, percentage: percentage };
+            }).filter(item => item.amount > 0);
+        
+        const pieData = categoryAnalysis.map(cat => ({ value: cat.amount, color: cat.color, text: `${cat.percentage.toFixed(0)}%` }));
+
+        return { totalIncome, totalExpenses, remaining: totalIncome - totalExpenses, pieData, categoryAnalysis };
+    }, [filteredTransactions, categories]);
+
+    const handleClearAll = () => Alert.alert('Confirmar', 'Deseja limpar todos os dados?', [{ text: 'Cancelar' }, { text: 'Confirmar', onPress: clearAll, style: 'destructive' }]);
+    const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+    return (
+        // Usamos um View normal aqui, pois o Drawer Navigator já cuida da SafeArea.
+        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
+            <DateFilter />
+            <View style={styles.summaryContainer}>
+                <View style={styles.summaryCard}><Text style={styles.summaryLabel}>Receitas</Text><Text style={[styles.summaryValue, {color: '#10B981'}]}>{formatCurrency(analysis.totalIncome)}</Text></View>
+                <View style={styles.summaryCard}><Text style={styles.summaryLabel}>Despesas</Text><Text style={[styles.summaryValue, {color: '#EF4444'}]}>{formatCurrency(analysis.totalExpenses)}</Text></View>
+                <View style={styles.summaryCard}><Text style={styles.summaryLabel}>Saldo</Text><Text style={[styles.summaryValue, {color: analysis.remaining >= 0 ? '#10B981' : '#EF4444'}]}>{formatCurrency(analysis.remaining)}</Text></View>
+            </View>
+
+            <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>📊 Distribuição de Gastos</Text>
+                    <View style={styles.viewModeSelector}>
+                        <TouchableOpacity onPress={() => setViewMode('chart')} style={[styles.selectorButton, viewMode === 'chart' ? styles.selectorActive : null]}><Ionicons name="pie-chart" size={20} color={viewMode === 'chart' ? '#3B82F6' : '#6B7280'} /></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.selectorButton, viewMode === 'list' ? styles.selectorActive : null]}><Ionicons name="list" size={20} color={viewMode === 'list' ? '#3B82F6' : '#6B7280'} /></TouchableOpacity>
+                    </View>
+                </View>
+                
+                {analysis.totalExpenses > 0 
+                    ? ( viewMode === 'chart' 
+                        ? ( <View style={styles.chartContainer}> <PieChart data={analysis.pieData} donut radius={80} innerRadius={50} centerLabelComponent={() => <Text style={styles.chartCenterLabel}>{formatCurrency(analysis.totalExpenses)}</Text>} /> <View style={styles.legendContainer}> {analysis.categoryAnalysis.map(item => ( <View key={item.name} style={styles.legendItem}><View style={[styles.legendColor, {backgroundColor: item.color}]} /><Text style={styles.legendText}>{item.name} ({item.percentage.toFixed(1)}%)</Text></View> ))} </View> </View> ) 
+                        : ( <View> {analysis.categoryAnalysis.sort((a,b) => b.amount - a.amount).map(cat => ( <View key={cat.name} style={styles.listItem}><View style={styles.listItemInfo}><View style={[styles.legendColor, {backgroundColor: cat.color}]} /><Text style={styles.listItemText}>{cat.name}</Text></View><View><Text style={styles.listItemAmount}>{formatCurrency(cat.amount)}</Text><Text style={styles.listItemPercentage}>{cat.percentage.toFixed(1)}%</Text></View></View> ))} </View> )
+                    ) 
+                    : ( <Text style={styles.emptyChartText}>Nenhum gasto no mês para exibir a distribuição.</Text> )
+                }
+            </View>
+            <TouchableOpacity onPress={handleClearAll} style={styles.clearButton}><Ionicons name="trash-outline" size={16} color="#EF4444" /><Text style={styles.clearButtonText}>Limpar Todos os Dados</Text></TouchableOpacity>
+        </ScrollView>
     );
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'above': return '#EF4444';
-      case 'below': return '#F59E0B';
-      default: return '#10B981';
-    }
-  };
-
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header Card */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerContent}>
-          <Ionicons name="wallet" size={24} color="#fff" />
-          <Text style={styles.headerTitle}>Gerenciador Financeiro</Text>
-        </View>
-        <TouchableOpacity onPress={handleClearAll} style={styles.clearButton}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Salary Input */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>💰 Renda Mensal</Text>
-        <View style={styles.inputContainer}>
-          <Text style={styles.currencySymbol}>R$</Text>
-          <TextInput
-            style={styles.salaryInput}
-            value={tempSalary}
-            onChangeText={setTempSalary}
-            placeholder="Digite sua renda mensal"
-            keyboardType="numeric"
-            placeholderTextColor="#9CA3AF"
-          />
-        </View>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSalarySave}>
-          <Text style={styles.saveButtonText}>Salvar Renda</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Financial Summary */}
-      {analysis.salary > 0 && (
-        <>
-          <View style={styles.summaryContainer}>
-            <View style={[styles.summaryCard, styles.incomeCard]}>
-              <Ionicons name="arrow-up" size={24} color="#10B981" />
-              <Text style={styles.summaryLabel}>Renda</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(analysis.salary)}</Text>
-            </View>
-            
-            <View style={[styles.summaryCard, styles.expenseCard]}>
-              <Ionicons name="arrow-down" size={24} color="#EF4444" />
-              <Text style={styles.summaryLabel}>Gastos</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(analysis.totalExpenses)}</Text>
-            </View>
-            
-            <View style={[
-              styles.summaryCard, 
-              analysis.remaining >= 0 ? styles.balancePositive : styles.balanceNegative
-            ]}>
-              <Ionicons 
-                name={analysis.remaining >= 0 ? "checkmark-circle" : "alert-circle"} 
-                size={24} 
-                color={analysis.remaining >= 0 ? "#3B82F6" : "#EF4444"} 
-              />
-              <Text style={styles.summaryLabel}>
-                {analysis.remaining >= 0 ? 'Sobra' : 'Déficit'}
-              </Text>
-              <Text style={[
-                styles.summaryValue,
-                { color: analysis.remaining >= 0 ? '#3B82F6' : '#EF4444' }
-              ]}>
-                {formatCurrency(Math.abs(analysis.remaining))}
-              </Text>
-            </View>
-          </View>
-
-          {/* Savings Percentage */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>📊 Taxa de Poupança</Text>
-            <View style={styles.savingsContainer}>
-              <Text style={styles.savingsPercentage}>
-                {analysis.savingsPercentage.toFixed(1)}%
-              </Text>
-              <Text style={styles.savingsLabel}>
-                {analysis.savingsPercentage >= 20 ? 'Excelente!' : 
-                 analysis.savingsPercentage >= 10 ? 'Bom, mas pode melhorar' : 
-                 'Precisa melhorar'}
-              </Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    width: `${Math.min(analysis.savingsPercentage, 100)}%`,
-                    backgroundColor: analysis.savingsPercentage >= 20 ? '#10B981' : 
-                                   analysis.savingsPercentage >= 10 ? '#F59E0B' : '#EF4444'
-                  }
-                ]} 
-              />
-            </View>
-          </View>
-
-          {/* Category Analysis */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>📈 Análise por Categoria</Text>
-            {analysis.categoryAnalysis.map(category => (
-              <View key={category.category} style={styles.categoryItem}>
-                <View style={styles.categoryHeader}>
-                  <Text style={styles.categoryName}>{category.category}</Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: getStatusColor(category.status) + '20' }
-                  ]}>
-                    <Text style={[
-                      styles.statusText,
-                      { color: getStatusColor(category.status) }
-                    ]}>
-                      {category.percentage.toFixed(1)}%
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.categoryRecommended}>
-                  Recomendado: {category.recommended}%
-                </Text>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        width: `${Math.min(category.percentage, 100)}%`,
-                        backgroundColor: category.color
-                      }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.categoryAmount}>
-                  {formatCurrency(category.amount)} / {formatCurrency(category.recommendedAmount)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
-
-      {analysis.salary === 0 && (
-        <View style={styles.emptyState}>
-          <Ionicons name="wallet-outline" size={64} color="#9CA3AF" />
-          <Text style={styles.emptyStateTitle}>Comece inserindo sua renda</Text>
-          <Text style={styles.emptyStateText}>
-            Digite sua renda mensal acima para começar a análise financeira
-          </Text>
-        </View>
-      )}
-    </ScrollView>
-  );
 }
-
+// Estilos... (os estilos podem ser mantidos)
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  headerCard: {
-    backgroundColor: '#3B82F6',
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  clearButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  card: {
-    backgroundColor: '#fff',
-    margin: 16,
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
-  },
-  currencySymbol: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginRight: 8,
-  },
-  salaryInput: {
-    flex: 1,
-    height: 48,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  saveButton: {
-    backgroundColor: '#3B82F6',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginTop: 4,
-  },
-  savingsContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  savingsPercentage: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#3B82F6',
-  },
-  savingsLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  categoryItem: {
-    marginBottom: 20,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  categoryName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  categoryRecommended: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  categoryAmount: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-    marginTop: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+    container: { backgroundColor: '#F3F4F6', flex: 1 },
+    summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 12, marginTop: 16 },
+    summaryCard: { flex: 1, backgroundColor: '#fff', marginHorizontal: 4, padding: 16, borderRadius: 12, alignItems: 'center', elevation: 3 },
+    summaryLabel: { fontSize: 12, color: '#6B7280' },
+    summaryValue: { fontSize: 16, fontWeight: 'bold', marginTop: 4 },
+    card: { backgroundColor: '#fff', marginHorizontal: 16, marginTop: 16, padding: 20, borderRadius: 12, elevation: 3 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
+    viewModeSelector: { flexDirection: 'row', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, overflow: 'hidden' },
+    selectorButton: { padding: 8 },
+    selectorActive: { backgroundColor: '#E0E7FF' },
+    chartContainer: { alignItems: 'center', paddingVertical: 20 },
+    chartCenterLabel: { fontSize: 16, fontWeight: 'bold' },
+    legendContainer: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 20 },
+    legendItem: { flexDirection: 'row', alignItems: 'center', margin: 5, padding: 4 },
+    legendColor: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
+    legendText: { fontSize: 12 },
+    emptyChartText: { textAlign: 'center', color: '#6B7280', padding: 20 },
+    listItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    listItemInfo: { flexDirection: 'row', alignItems: 'center' },
+    listItemText: { fontSize: 14 },
+    listItemAmount: { fontSize: 14, fontWeight: 'bold', textAlign: 'right' },
+    listItemPercentage: { fontSize: 12, color: '#6B7280', textAlign: 'right' },
+    clearButton: { marginVertical: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    clearButtonText: { color: '#EF4444', marginLeft: 8 },
 });

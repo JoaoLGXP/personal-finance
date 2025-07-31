@@ -1,12 +1,53 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "543b7faa-354e-4a66-8948-f3d703347980"
+    "name": "Personal Finance App",
+    "slug": "Personal Finance App",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lucagxp.AppFinanceiroNovo",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.lucagxp.financialmanagerapp"
-    }
+      "package": "com.lucagxp.AppFinanceiroNovo",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "owner": "lucagxp",
+    "extra": {
+      "eas": {
+        "projectId": "2fe2b404-039a-4251-a9a0-d9e96b77dbca"
+      }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.8.22",
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0",
+            "useAndroidX": true,
+            "enableJetifier": true
+          }
+        }
+      ]
+    ]
   }
 }

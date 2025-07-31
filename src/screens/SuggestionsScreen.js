@@ -116,19 +116,16 @@ export default function SuggestionsScreen() {
   };
 
   const openInvestmentLink = () => {
-    // Em um app real, você abriria links para corretoras ou bancos
     Linking.openURL('https://www.b3.com.br/pt_br/produtos-e-servicos/negociacao/renda-variavel/');
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
       <View style={styles.header}>
         <Ionicons name="bulb" size={24} color="#3B82F6" />
         <Text style={styles.headerTitle}>Sugestões Personalizadas</Text>
       </View>
 
-      {/* Personal Suggestions */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>📊 Análise da Sua Situação</Text>
         {suggestions.map((suggestion, index) => {
@@ -160,7 +157,6 @@ export default function SuggestionsScreen() {
         })}
       </View>
 
-      {/* Investment Recommendations */}
       {analysis.remaining > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>💰 Onde Investir</Text>
@@ -195,7 +191,6 @@ export default function SuggestionsScreen() {
         </View>
       )}
 
-      {/* Financial Tips */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>💡 Dicas Financeiras</Text>
         {financialTips.map((tip, index) => (
@@ -213,7 +208,6 @@ export default function SuggestionsScreen() {
         ))}
       </View>
 
-      {/* Budget Breakdown */}
       {analysis.salary > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📋 Distribuição Ideal</Text>
@@ -246,7 +240,6 @@ export default function SuggestionsScreen() {
         </View>
       )}
 
-      {/* Emergency Fund Calculator */}
       {analysis.totalExpenses > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🛡️ Reserva de Emergência</Text>
