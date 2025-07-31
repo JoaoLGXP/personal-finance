@@ -16,13 +16,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lucagxp.AppFinanceiroNovo",
+      "bundleIdentifier": "com.lucagxp.PersonalFinanceApp",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.lucagxp.AppFinanceiroNovo",
+      "package": "com.lucagxp.PersonalFinanceApp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
