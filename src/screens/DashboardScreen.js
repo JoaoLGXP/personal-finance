@@ -1,7 +1,7 @@
 // src/screens/DashboardScreen.js
 // O código é o mesmo da última versão, apenas REMOVEMOS os botões flutuantes (FABs)
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from "react-native-gifted-charts";
 import { useFinancial } from '../context/FinancialContext';
