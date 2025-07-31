@@ -1,8 +1,8 @@
 // App.js
-import 'react-native-gesture-handler'; // IMPORTANTE: Deve ser a primeira linha
+// IMPORTANTE: A linha 'import 'react-native-gesture-handler';' foi REMOVIDA.
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createDrawerNavigator } from '@react-navigation/drawer'; // MUDANÇA
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,9 +12,9 @@ import SuggestionsScreen from './src/screens/SuggestionsScreen';
 import CategoriesScreen from './src/screens/CategoriesScreen';
 import RecurringScreen from './src/screens/RecurringScreen';
 import { FinancialProvider } from './src/context/FinancialContext';
-import { DrawerContent } from './src/components/DrawerContent'; // NOVO
+import { DrawerContent } from './src/components/DrawerContent';
 
-const Drawer = createDrawerNavigator(); // MUDANÇA
+const Drawer = createDrawerNavigator();
 
 export default function App() {
   return (
@@ -22,9 +22,8 @@ export default function App() {
       <StatusBar style="light" />
       <NavigationContainer>
         <Drawer.Navigator
-          drawerContent={props => <DrawerContent {...props} />} // Usa nosso menu customizado
+          drawerContent={props => <DrawerContent {...props} />}
           screenOptions={{
-            // Header azul que você gosta, mantido
             headerStyle: {
               backgroundColor: '#3B82F6',
             },
@@ -32,6 +31,8 @@ export default function App() {
             headerTitleStyle: {
               fontWeight: 'bold',
             },
+            // MUDANÇA: Usando o tipo de drawer 'front' que é mais simples
+            drawerType: 'front', 
             // Estilos dos itens do menu
             drawerActiveBackgroundColor: '#3B82F6',
             drawerActiveTintColor: '#fff',
@@ -42,41 +43,31 @@ export default function App() {
             }
           }}
         >
-          {/* Nossas telas agora são parte do menu lateral */}
+          {/* As telas continuam as mesmas */}
           <Drawer.Screen 
             name="Painel Financeiro" 
             component={DashboardScreen} 
-            options={{
-              drawerIcon: ({ color }) => <Ionicons name="pie-chart-outline" size={22} color={color} />
-            }}
+            options={{ drawerIcon: ({ color }) => <Ionicons name="pie-chart-outline" size={22} color={color} /> }}
           />
           <Drawer.Screen 
             name="Meus Gastos" 
             component={ExpensesScreen} 
-            options={{
-              drawerIcon: ({ color }) => <Ionicons name="receipt-outline" size={22} color={color} />
-            }}
+            options={{ drawerIcon: ({ color }) => <Ionicons name="receipt-outline" size={22} color={color} /> }}
           />
           <Drawer.Screen 
             name="Transações Recorrentes" 
             component={RecurringScreen} 
-            options={{
-              drawerIcon: ({ color }) => <Ionicons name="repeat-outline" size={22} color={color} />
-            }}
+            options={{ drawerIcon: ({ color }) => <Ionicons name="repeat-outline" size={22} color={color} /> }}
           />
           <Drawer.Screen 
             name="Minhas Categorias" 
             component={CategoriesScreen} 
-            options={{
-              drawerIcon: ({ color }) => <Ionicons name="pricetags-outline" size={22} color={color} />
-            }}
+            options={{ drawerIcon: ({ color }) => <Ionicons name="pricetags-outline" size={22} color={color} /> }}
           />
           <Drawer.Screen 
             name="Dicas Financeiras" 
             component={SuggestionsScreen} 
-            options={{
-              drawerIcon: ({ color }) => <Ionicons name="bulb-outline" size={22} color={color} />
-            }}
+            options={{ drawerIcon: ({ color }) => <Ionicons name="bulb-outline" size={22} color={color} /> }}
           />
         </Drawer.Navigator>
       </NavigationContainer>
