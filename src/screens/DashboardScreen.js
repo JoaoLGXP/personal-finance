@@ -178,7 +178,7 @@ export default function DashboardScreen() {
                     ) : null}
 
                     <View style={styles.card}>
-                        <View style={styles.cardHeader}><Text style={styles.cardTitle}>📊 Distribuição de Gastos</Text><View style={styles.viewModeSelector}><TouchableOpacity onPress={() => setViewMode('chart')} style={[styles.selectorButton, viewMode === 'chart' ? styles.selectorActive : null]}><Ionicons name="pie-chart" size={20} color={viewMode === 'chart' ? '#3B82F6' : '#6B7280'} /></TouchableOpacity><TouchableOpacity onPress={() => setViewMode('list')} style={[styles.selectorButton, viewMode === 'list' ? styles.selectorActive : null]}><Ionicons name="list" size={20} color={viewMode === 'list' ? '#3B82F6' : '#6B7280'} /></TouchableOpacity></View></View>
+                        <View style={styles.cardHeader}><Text style={styles.cardTitle}>📊 Distribuição de Gastos</Text><View style={styles.viewModeSelector}><TouchableOpacity onPress={() => setViewMode('chart')} style={[styles.selectorButton, viewMode === 'chart' ? styles.selectorActive : null]}><Ionicons name="pie-chart" size={20} color={viewMode === 'chart' ? '#38015cff' : '#6B7280'} /></TouchableOpacity><TouchableOpacity onPress={() => setViewMode('list')} style={[styles.selectorButton, viewMode === 'list' ? styles.selectorActive : null]}><Ionicons name="list" size={20} color={viewMode === 'list' ? '#38015cff' : '#6B7280'} /></TouchableOpacity></View></View>
                         {analysis.totalExpenses > 0 ? (
                             viewMode === 'chart' ? (
                                 <View style={styles.chartContainer}>

@@ -42,7 +42,7 @@ const DateFilter = () => {
     <View>
       <View style={styles.dateFilterContainer}>
         <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.arrowButton}>
-          <Ionicons name="chevron-back" size={24} color="#3B82F6" />
+          <Ionicons name="chevron-back" size={24} color="#38015cff" />
         </TouchableOpacity>
         
         <TouchableOpacity onPress={showPickerModal}>
@@ -50,7 +50,7 @@ const DateFilter = () => {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => changeMonth(1)} style={styles.arrowButton}>
-          <Ionicons name="chevron-forward" size={24} color="#3B82F6" />
+          <Ionicons name="chevron-forward" size={24} color="#38015cff" />
         </TouchableOpacity>
       </View>
 
