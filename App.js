@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import DashboardScreen from './src/screens/DashboardScreen';
+import IncomesScreen from './src/screens/IncomesScreen';
 import ExpensesScreen from './src/screens/ExpensesScreen';
 import SuggestionsScreen from './src/screens/SuggestionsScreen';
 import CategoriesScreen from './src/screens/CategoriesScreen';
@@ -24,19 +25,25 @@ export default function App() {
         <Drawer.Navigator
           drawerContent={props => <DrawerContent {...props} />}
           screenOptions={{
-            headerStyle: { backgroundColor: '#3B82F6' },
+            headerStyle: { backgroundColor: '#5a0394ff' },
             headerTintColor: '#fff',
             headerTitleStyle: { fontWeight: 'bold' },
-            drawerActiveBackgroundColor: '#3B82F6',
+            drawerActiveBackgroundColor: '#5a0394ff',
             drawerActiveTintColor: '#fff',
             drawerInactiveTintColor: '#333',
-            drawerLabelStyle: { marginLeft: -20, fontSize: 15 }
+            drawerLabelStyle: { fontSize: 15 },
+            drawerItemStyle: { marginVertical: 5 }
           }}
         >
           <Drawer.Screen
-            name="Painel Financeiro"
+            name="Personal Finance"
             component={DashboardScreen}
             options={{ drawerIcon: ({ color }) => <Ionicons name="pie-chart-outline" size={22} color={color} /> }}
+          />
+          <Drawer.Screen 
+            name="Minhas Receitas" 
+            component={IncomesScreen} 
+            options={{ drawerIcon: ({ color }) => <Ionicons name="cash-outline" size={22} color={color} /> }}
           />
           <Drawer.Screen
             name="Meus Gastos"

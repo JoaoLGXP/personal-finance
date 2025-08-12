@@ -10,7 +10,7 @@ export function DrawerContent(props) {
       <DrawerContentScrollView {...props}>
         <View style={styles.header}>
           <Ionicons name="wallet" size={40} color="#fff" />
-          <Text style={styles.headerTitle}>Meu App Financeiro</Text>
+          <Text style={styles.headerTitle}>Personal Finance App</Text>
         </View>
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
@@ -29,7 +29,7 @@ export function DrawerContent(props) {
 const styles = StyleSheet.create({
   header: {
     padding: 20,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#5a0394ff',
     marginBottom: 10,
   },
   headerTitle: {

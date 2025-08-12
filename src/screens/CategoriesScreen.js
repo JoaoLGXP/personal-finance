@@ -141,7 +141,7 @@ export default function CategoriesScreen() {
 // Estilos... (você pode copiar e colar a folha de estilos completa no final)
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F3F4F6' },
-    addButton: { position: 'absolute', bottom: 30, right: 30, backgroundColor: '#3B82F6', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 8 },
+    addButton: { position: 'absolute', bottom: 30, right: 30, backgroundColor: '#5a0394ff', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 8 },
     itemContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
     itemInfo: { flexDirection: 'row', alignItems: 'center' },
     itemColor: { width: 20, height: 20, borderRadius: 10, marginRight: 16 },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     colorSelected: { borderWidth: 3, borderColor: '#000' },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end' },
     cancelButton: { padding: 12 },
-    saveButton: { padding: 12, backgroundColor: '#3B82F6', borderRadius: 8, marginLeft: 16 },
+    saveButton: { padding: 12, backgroundColor: '#5a0394ff', borderRadius: 8, marginLeft: 16 },
     saveButtonText: { color: '#fff' },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 100 },
     emptyStateTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginTop: 16, marginBottom: 8 },

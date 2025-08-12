@@ -1,12 +1,30 @@
 // src/components/DateFilter.js
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import MonthPicker from 'react-native-month-year-picker';
 import { useFinancial } from '../context/FinancialContext';
 
 const DateFilter = () => {
   const { dateFilter, setDateFilter } = useFinancial();
+  const [showPicker, setShowPicker] = useState(false);
 
+  const showPickerModal = () => setShowPicker(true);
+
+  const onValueChange = useCallback(
+    (event, newDate) => {
+      const selectedDate = newDate || new Date(dateFilter.year, dateFilter.month);
+      setShowPicker(false);
+      if (event === 'dateSetAction') {
+        setDateFilter({
+          month: selectedDate.getMonth(),
+          year: selectedDate.getFullYear(),
+        });
+      }
+    },
+    [dateFilter, setDateFilter],
+  );
+  
   const changeMonth = (amount) => {
     const newDate = new Date(dateFilter.year, dateFilter.month + amount);
     setDateFilter({
@@ -21,24 +39,30 @@ const DateFilter = () => {
   });
 
   return (
-    <View style={styles.dateFilterContainer}>
-      {true ? (
+    <View>
+      <View style={styles.dateFilterContainer}>
         <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.arrowButton}>
           <Ionicons name="chevron-back" size={24} color="#3B82F6" />
         </TouchableOpacity>
-      ) : null}
+        
+        <TouchableOpacity onPress={showPickerModal}>
+            <Text style={styles.dateFilterText}>{monthName.charAt(0).toUpperCase() + monthName.slice(1)}</Text>
+        </TouchableOpacity>
 
-      {true ? (
-        <Text style={styles.dateFilterText}>
-          {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
-        </Text>
-      ) : null}
-
-      {true ? (
         <TouchableOpacity onPress={() => changeMonth(1)} style={styles.arrowButton}>
           <Ionicons name="chevron-forward" size={24} color="#3B82F6" />
         </TouchableOpacity>
-      ) : null}
+      </View>
+
+      {showPicker && (
+        <MonthPicker
+          onChange={onValueChange}
+          value={new Date(dateFilter.year, dateFilter.month)}
+          minimumDate={new Date(2020, 0)}
+          maximumDate={new Date(2030, 11)}
+          locale="pt"
+        />
+      )}
     </View>
   );
 };
