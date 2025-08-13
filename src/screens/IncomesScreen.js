@@ -12,7 +12,7 @@ export default function IncomesScreen({ navigation }) {
 
   const handleEdit = (item) => {
     startEditTransaction(item);
-    navigation.navigate('Personal Finance');
+    navigation.navigate('SaldoUp');
   };
 
   const handleDeleteTransaction = (item) => { /* ... (código sem alterações) ... */ const description = item.description || 'esta receita'; Alert.alert('Confirmar exclusão', `Deseja excluir "${description}"?`, [{ text: 'Cancelar' }, { text: 'Excluir', onPress: () => removeTransaction(item.id), style: 'destructive' }]); };

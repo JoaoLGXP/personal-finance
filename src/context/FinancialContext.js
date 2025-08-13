@@ -143,6 +143,26 @@ export function FinancialProvider({ children }) {
     });
   }, [state.transactions, state.dateFilter, state.isLoading]);
 
+  // ===== NOVO: FUNÇÃO PARA BUSCAR TRANSAÇÕES PASSADAS =====
+  const getPastMonthsTransactions = useCallback((numberOfMonths) => {
+    const pastTransactions = {};
+    const allTransactions = state.transactions;
+
+    for (let i = 0; i < numberOfMonths; i++) {
+        const date = new Date(state.dateFilter.year, state.dateFilter.month - i, 1);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const key = `${year}-${month}`;
+        
+        pastTransactions[key] = allTransactions.filter(t => {
+            const tDate = new Date(t.date);
+            return tDate.getFullYear() === year && tDate.getMonth() === month;
+        });
+    }
+    return pastTransactions;
+  }, [state.transactions, state.dateFilter]);
+  // =======================================================
+
   const addTransaction = useCallback((transactionData) => {
     const transactionDate = new Date(state.dateFilter.year, state.dateFilter.month, new Date().getDate());
     const fullTransaction = { ...transactionData, date: transactionDate.toISOString() };
@@ -227,6 +247,7 @@ export function FinancialProvider({ children }) {
     clearAll,
     getFinancialAnalysis,
     getSuggestions,
+    getPastMonthsTransactions
   };
 
   return <FinancialContext.Provider value={value}>{children}</FinancialContext.Provider>;

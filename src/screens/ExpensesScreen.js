@@ -13,7 +13,7 @@ export default function ExpensesScreen({ navigation }) {
 
   const handleEdit = (item) => {
     startEditTransaction(item);
-    navigation.navigate('Personal Finance');
+    navigation.navigate('SaldoUp');
   };
 
   const handleDeleteTransaction = (item) => {

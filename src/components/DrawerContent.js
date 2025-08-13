@@ -10,7 +10,7 @@ export function DrawerContent(props) {
       <DrawerContentScrollView {...props}>
         <View style={styles.header}>
           <Ionicons name="wallet" size={40} color="#fff" />
-          <Text style={styles.headerTitle}>Personal Finance App</Text>
+          <Text style={styles.headerTitle}>SaldoUp</Text>
         </View>
         <DrawerItemList {...props} />
       </DrawerContentScrollView>

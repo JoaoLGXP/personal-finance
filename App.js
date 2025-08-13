@@ -36,7 +36,7 @@ export default function App() {
           }}
         >
           <Drawer.Screen
-            name="Personal Finance"
+            name="SaldoUp"
             component={DashboardScreen}
             options={{ drawerIcon: ({ color }) => <Ionicons name="pie-chart-outline" size={22} color={color} /> }}
           />

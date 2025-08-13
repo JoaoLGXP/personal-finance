@@ -14,7 +14,7 @@ export default function SideMenu({ navigation, closeDrawer }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="wallet" size={40} color="#5a0394ff" />
-        <Text style={styles.headerTitle}>Personal Finance App</Text>
+        <Text style={styles.headerTitle}>SaldoUp</Text>
       </View>
       <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('Recorrências')}>
         <Ionicons name="repeat-outline" size={22} color="#333" />
