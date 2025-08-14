@@ -7,6 +7,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
+import OnboardingScreen from './src/screens/OnboardingScreen'; // NOVO
 import DashboardScreen from './src/screens/DashboardScreen';
 import IncomesScreen from './src/screens/IncomesScreen';
 import ExpensesScreen from './src/screens/ExpensesScreen';
@@ -17,7 +18,7 @@ import RulesListScreen from './src/screens/RulesListScreen';
 import RuleDetailScreen from './src/screens/RuleDetailScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
 
-import { FinancialProvider } from './src/context/FinancialContext';
+import { FinancialProvider, useFinancial } from './src/context/FinancialContext';
 import { DrawerContent } from './src/components/DrawerContent';
 
 const Drawer = createDrawerNavigator();
@@ -36,7 +37,7 @@ function DrawerNavigator() {
         drawerInactiveTintColor: '#333',
       }}
     >
-      <Drawer.Screen name="SaldoUp" component={DashboardScreen} options={{ drawerIcon: ({ color }) => <Ionicons name="pie-chart-outline" size={22} color={color} /> }} />
+      <Drawer.Screen name="Painel Financeiro" component={DashboardScreen} options={{ drawerIcon: ({ color }) => <Ionicons name="pie-chart-outline" size={22} color={color} /> }} />
       <Drawer.Screen name="Análise de Gastos" component={AnalysisScreen} options={{ drawerIcon: ({ color }) => <Ionicons name="analytics-outline" size={22} color={color} /> }} />
       <Drawer.Screen name="Minhas Receitas" component={IncomesScreen} options={{ drawerIcon: ({ color }) => <Ionicons name="cash-outline" size={22} color={color} /> }} />
       <Drawer.Screen name="Meus Gastos" component={ExpensesScreen} options={{ drawerIcon: ({ color }) => <Ionicons name="receipt-outline" size={22} color={color} /> }} />
@@ -48,20 +49,42 @@ function DrawerNavigator() {
   );
 }
 
+// NOVO: Componente que decide qual tela mostrar
+function AppNavigator() {
+    const { hasOnboarded, isLoading } = useFinancial();
+
+    if (isLoading) {
+        // Pode-se adicionar uma tela de splash aqui, se desejar
+        return null;
+    }
+
+    return (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {!hasOnboarded ? (
+                <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            ) : (
+                <Stack.Screen name="MainDrawer" component={DrawerNavigator} />
+            )}
+            <Stack.Screen 
+                name="RuleDetail" 
+                component={RuleDetailScreen} 
+                options={{ 
+                    headerShown: true,
+                    title: 'Detalhes da Regra',
+                    headerStyle: { backgroundColor: '#5a0394ff' },
+                    headerTintColor: '#fff',
+                }}
+            />
+        </Stack.Navigator>
+    );
+}
+
 export default function App() {
   return (
     <FinancialProvider>
       <StatusBar style="light" />
       <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: '#5a0394ff' },
-            headerTintColor: '#fff',
-          }}
-        >
-          <Stack.Screen name="MainDrawer" component={DrawerNavigator} options={{ headerShown: false }} />
-          <Stack.Screen name="RuleDetail" component={RuleDetailScreen} options={{ title: 'Detalhes da Regra' }} />
-        </Stack.Navigator>
+        <AppNavigator />
       </NavigationContainer>
     </FinancialProvider>
   );

@@ -6,6 +6,7 @@ const FinancialContext = createContext();
 
 const initialState = {
   isLoading: true,
+  hasOnboarded: false,
   transactions: [],
   recurringTransactions: [],
   categories: [],
@@ -19,6 +20,7 @@ const initialState = {
 function financialReducer(state, action) {
   switch (action.type) {
     case 'FINISH_LOADING': return { ...state, isLoading: false };
+    case 'SET_ONBOARDED': return { ...state, hasOnboarded: true };
     case 'LOAD_DATA': return { ...state, ...action.payload };
     case 'ADD_TRANSACTION': return { ...state, transactions: [...state.transactions, { ...action.payload, id: Date.now() }] };
     case 'REMOVE_TRANSACTION': return { ...state, transactions: state.transactions.filter(t => t.id !== action.payload) };
@@ -72,6 +74,11 @@ export function FinancialProvider({ children }) {
   useEffect(() => {
     const loadAndProcessData = async () => {
       try {
+        // Verifica se o onboarding já foi concluído
+        const onboarded = await AsyncStorage.getItem('hasOnboarded');
+        if (onboarded === 'true') {
+          dispatch({ type: 'SET_ONBOARDED' });
+        }
         const savedData = await AsyncStorage.getItem('financialData');
         let dataToLoad = savedData ? JSON.parse(savedData) : {};
         if (!dataToLoad.categories || dataToLoad.categories.length === 0) {
@@ -291,9 +298,20 @@ export function FinancialProvider({ children }) {
     return suggestions;
   }, [getFinancialAnalysis]);
 
+  // NOVO: Função para marcar o onboarding como concluído
+  const setOnboarded = useCallback(async () => {
+    try {
+        await AsyncStorage.setItem('hasOnboarded', 'true');
+        dispatch({ type: 'SET_ONBOARDED' });
+    } catch (e) {
+        console.error("Failed to save onboarded status.", e);
+    }
+  }, []);
+
   // AQUI ESTÁ A LIMPEZA E CORREÇÃO DO OBJETO `value`
   const value = {
     ...state,
+    setOnboarded,
     filteredTransactions,
     addTransaction,
     removeTransaction,
