@@ -1,26 +1,27 @@
+// src/screens/DashboardScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, SafeAreaView, TouchableOpacity, Alert, ActivityIndicator, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinancial } from '../context/FinancialContext';
 import DateFilter from '../components/DateFilter';
 import GestureContainer from '../components/GestureContainer';
-import { formatCurrency } from '../utils/format';
-import useUpcomingBills from '../hooks/useUpcomingBills';
 import useFinancialAnalysis from '../hooks/useFinancialAnalysis';
 import SummaryCards from '../components/SummaryCards';
-import UpcomingBillsCard from '../components/UpcomingBillsCard';
 import IntelligenceCards from '../components/IntelligenceCards';
 import MonthlyEvolutionChart from '../components/MonthlyEvolutionChart';
 import ExpenseDistribution from '../components/ExpenseDistribution';
 import TransactionModal from '../components/TransactionModal';
 import CategoryPickerModal from '../components/CategoryPickerModal';
+import ActionButtons from '../components/ActionButtons';
 import styles from './DashboardScreen.styles';
+import UpcomingBillsCard from '../components/UpcomingBillsCard';
+import RulesHighlightCard from '../components/RulesHighlightCard';
 
 export default function DashboardScreen() {
   const {
-    isLoading, filteredTransactions, categories, clearAll, addTransaction,
-    addRecurringTransaction, recurringTransactions, getCategoryById,
-    transactionToEdit, updateTransaction, clearEditTransaction, dateFilter, getPastMonthsTransactions
+    isLoading, categories, clearAll, addTransaction, addRecurringTransaction,
+    getCategoryById, transactionToEdit, updateTransaction, clearEditTransaction,
+    filteredTransactions, recurringTransactions, dateFilter, getPastMonthsTransactions
   } = useFinancial();
 
   const [viewMode, setViewMode] = useState('chart');
@@ -29,21 +30,20 @@ export default function DashboardScreen() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [newTransaction, setNewTransaction] = useState({});
 
-  const upcomingBills = useUpcomingBills({ recurringTransactions, filteredTransactions, dateFilter, isLoading });
-  const analysis = useFinancialAnalysis({ filteredTransactions, categories, isLoading, dateFilter, recurringTransactions, getPastMonthsTransactions, formatCurrency });
+  const analysis = useFinancialAnalysis({
+    filteredTransactions, categories, isLoading, dateFilter, recurringTransactions, getPastMonthsTransactions
+  });
 
   useEffect(() => {
     if (transactionToEdit) {
       setIsIncome(transactionToEdit.type === 'income');
-      setNewTransaction({
-        ...transactionToEdit,
-        amount: transactionToEdit.amount.toString(),
-      });
+      setNewTransaction({ ...transactionToEdit, amount: transactionToEdit.amount.toString() });
       setModalVisible(true);
     }
   }, [transactionToEdit]);
 
   const handleOpenModal = (type) => {
+    clearEditTransaction();
     setIsIncome(type === 'income');
     setNewTransaction({ type, categoryId: null, amount: '', description: '', isRecurring: false, dayOfMonth: new Date().getDate().toString() });
     setModalVisible(true);
@@ -57,7 +57,7 @@ export default function DashboardScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#5a0394ff" />
         <Text style={styles.loadingText}>Carregando dados...</Text>
       </SafeAreaView>
     );
@@ -69,11 +69,12 @@ export default function DashboardScreen() {
       <View style={{ flex: 1 }}>
         <GestureContainer>
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <SummaryCards analysis={analysis} formatCurrency={formatCurrency} />
-            {upcomingBills.length > 0 && <UpcomingBillsCard />}
-            <IntelligenceCards analysis={analysis} formatCurrency={formatCurrency} />
-            <MonthlyEvolutionChart analysis={analysis} formatCurrency={formatCurrency} />
-            <ExpenseDistribution viewMode={viewMode} setViewMode={setViewMode} analysis={analysis} formatCurrency={formatCurrency} />
+            <SummaryCards analysis={analysis} />
+            {analysis.upcomingBills && analysis.upcomingBills.length > 0 && <UpcomingBillsCard />}
+            <IntelligenceCards analysis={analysis} />
+            <RulesHighlightCard />
+            <MonthlyEvolutionChart analysis={analysis} />
+            <ExpenseDistribution viewMode={viewMode} setViewMode={setViewMode} analysis={analysis} />
             <TouchableOpacity onPress={handleClearAll} style={styles.clearButton}>
               <Ionicons name="trash-outline" size={16} color="#EF4444" />
               <Text style={styles.clearButtonText}>Limpar Todos os Dados</Text>
@@ -81,17 +82,10 @@ export default function DashboardScreen() {
           </ScrollView>
         </GestureContainer>
       </View>
-      <View style={styles.footerContainer}>
-        <TouchableOpacity onPress={() => handleOpenModal('income')} style={[styles.footerButton, styles.incomeButton]}>
-          <Ionicons name="add" size={24} color="#fff" />
-          <Text style={styles.footerButtonText}>Receita</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleOpenModal('expense')} style={[styles.footerButton, styles.expenseButton]}>
-          <Ionicons name="remove" size={24} color="#fff" />
-          <Text style={styles.footerButtonText}>Despesa</Text>
-        </TouchableOpacity>
-      </View>
-
+      <ActionButtons
+        onIncomePress={() => handleOpenModal('income')}
+        onExpensePress={() => handleOpenModal('expense')}
+      />
       <TransactionModal
         visible={modalVisible}
         setVisible={setModalVisible}
@@ -105,9 +99,7 @@ export default function DashboardScreen() {
         clearEditTransaction={clearEditTransaction}
         getCategoryById={getCategoryById}
         setShowCategoryPicker={setShowCategoryPicker}
-        formatCurrency={formatCurrency}
       />
-
       <CategoryPickerModal
         visible={showCategoryPicker}
         setVisible={setShowCategoryPicker}

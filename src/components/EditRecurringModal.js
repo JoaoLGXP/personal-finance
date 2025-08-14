@@ -1,14 +1,25 @@
 // src/components/EditRecurringModal.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useFinancial } from '../context/FinancialContext';
 
 export default function EditRecurringModal({ visible, onClose, transaction }) {
   const { updateRecurringTransaction } = useFinancial();
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(''); // Formato YYYY-MM
 
-  if (!transaction) return null;
+  useEffect(() => {
+    if (transaction && transaction.amountHistory && transaction.amountHistory.length > 0) {
+        // Pega o valor mais recente para preencher o campo ao abrir o modal
+        const latestAmountRecord = [...transaction.amountHistory].sort((a, b) => new Date(b.effectiveDate) - new Date(a.effectiveDate))[0];
+        setAmount(latestAmountRecord.amount.toString());
+        setDate('');
+    }
+  }, [transaction]);
+
+  if (!transaction) {
+    return null;
+  }
 
   const handleClose = () => {
     setAmount('');
@@ -41,18 +52,23 @@ export default function EditRecurringModal({ visible, onClose, transaction }) {
           <Text style={styles.modalTitle}>Agendar Reajuste</Text>
           <Text style={styles.modalSubtitle}>Para: {transaction.description}</Text>
           
-          <Text style={styles.inputLabel}>Novo Valor (R$)</Text>
-          <TextInput
-            style={styles.input}
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="Ex: 4000,00"
-            keyboardType="numeric"
-          />
+          {/* ===== INÍCIO DA MUDANÇA VISUAL ===== */}
+          <Text style={styles.inputLabel}>Novo Valor</Text>
+          <View style={styles.amountInputContainer}>
+            <Text style={styles.currencySymbol}>R$</Text>
+            <TextInput
+                style={styles.input}
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="0,00"
+                keyboardType="numeric"
+            />
+          </View>
+          {/* ===== FIM DA MUDANÇA VISUAL ===== */}
           
           <Text style={styles.inputLabel}>A partir do Mês (AAAA-MM)</Text>
           <TextInput
-            style={styles.input}
+            style={styles.dateInput}
             value={date}
             onChangeText={setDate}
             placeholder="Ex: 2025-12"
@@ -79,7 +95,36 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#1F2937' },
     modalSubtitle: { fontSize: 14, color: '#6B7280', marginBottom: 20 },
     inputLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
-    input: { borderWidth: 1, borderColor: '#D1D5DB', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 16 },
+    
+    // ===== NOVOS ESTILOS PARA O CAMPO DE VALOR =====
+    amountInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    currencySymbol: {
+        fontSize: 16,
+        color: '#6B7280',
+        paddingLeft: 12,
+    },
+    input: {
+        flex: 1,
+        padding: 12,
+        fontSize: 16,
+    },
+    dateInput: {
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 16,
+        fontSize: 16
+    },
+    // ===========================================
+
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
     cancelButton: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 },
     cancelButtonText: { color: '#6B7280', fontWeight: '600' },

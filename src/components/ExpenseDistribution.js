@@ -2,8 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-gifted-charts';
+import { formatCurrency } from '../utils/format';
 
-export default function ExpenseDistribution({ viewMode, setViewMode, analysis, formatCurrency }) {
+export default function ExpenseDistribution({ viewMode, setViewMode, analysis }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>

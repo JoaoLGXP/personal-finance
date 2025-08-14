@@ -1,3 +1,4 @@
+// src/components/TransactionModal.js
 import React from 'react';
 import { View, Text, Modal, SafeAreaView, ScrollView, TextInput, Switch, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,7 +83,7 @@ export default function TransactionModal({
         </View>
 
         <ScrollView style={styles.modalContent}>
-          {!isIncome && (
+          {!isIncome ? (
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Categoria *</Text>
               <TouchableOpacity
@@ -100,7 +101,7 @@ export default function TransactionModal({
                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </TouchableOpacity>
             </View>
-          )}
+          ) : null}
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Valor (R$) *</Text>
@@ -109,7 +110,9 @@ export default function TransactionModal({
               value={newTransaction.amount}
               onChangeText={(text) => setNewTransaction({ ...newTransaction, amount: text })}
               placeholder="0,00"
+              // ===== AQUI ESTÁ A MUDANÇA =====
               keyboardType="numeric"
+              // ==============================
             />
           </View>
 
@@ -142,7 +145,7 @@ export default function TransactionModal({
             />
           </View>
 
-          {newTransaction.isRecurring && (
+          {newTransaction.isRecurring ? (
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Dia do mês (1-31)</Text>
               <TextInput
@@ -153,7 +156,7 @@ export default function TransactionModal({
                 maxLength={2}
               />
             </View>
-          )}
+          ) : null}
 
           <TouchableOpacity style={styles.confirmButton} onPress={handleSaveTransaction}>
             <Text style={styles.confirmButtonText}>Adicionar</Text>

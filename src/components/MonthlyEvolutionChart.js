@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
+import { formatCurrency } from '../utils/format';
 
-export default function MonthlyEvolutionChart({ analysis, formatCurrency }) {
+export default function MonthlyEvolutionChart({ analysis }) {
   const [tooltip, setTooltip] = useState(null);
 
   const dataWithClick = analysis.barData.map((item, index, arr) => ({

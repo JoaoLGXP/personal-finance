@@ -8,6 +8,8 @@ import GestureContainer from '../components/GestureContainer';
 
 export default function IncomesScreen({ navigation }) {
   const { filteredTransactions, removeTransaction, startEditTransaction } = useFinancial();
+  
+  // Filtra apenas as transações do tipo 'income'
   const incomes = filteredTransactions.filter(t => t.type === 'income');
 
   const handleEdit = (item) => {
@@ -15,14 +17,40 @@ export default function IncomesScreen({ navigation }) {
     navigation.navigate('SaldoUp');
   };
 
-  const handleDeleteTransaction = (item) => { /* ... (código sem alterações) ... */ const description = item.description || 'esta receita'; Alert.alert('Confirmar exclusão', `Deseja excluir "${description}"?`, [{ text: 'Cancelar' }, { text: 'Excluir', onPress: () => removeTransaction(item.id), style: 'destructive' }]); };
+  const handleDeleteTransaction = (item) => {
+    const description = item.description || 'esta receita';
+    Alert.alert(
+      'Confirmar exclusão',
+      `Deseja excluir "${description}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', onPress: () => removeTransaction(item.id), style: 'destructive' }
+      ]
+    );
+  };
+
   const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('pt-BR');
 
   const renderIncomeItem = ({ item }) => {
     return (
       <View style={styles.incomeItem}>
-        <View style={styles.incomeContent}>{/* ... (código interno sem alterações) ... */}<View style={styles.incomeHeader}><View style={[styles.categoryBadge, { backgroundColor: '#D1FAE5' }]}><Text style={[styles.categoryBadgeText, { color: '#065F46' }]}>Receita</Text></View><Text style={styles.incomeAmount}>{formatCurrency(item.amount)}</Text></View>{item.description ? (<Text style={styles.incomeDescription}>{item.description}</Text>) : null}<Text style={styles.incomeDate}>{formatDate(item.date)}</Text></View>
+        <View style={styles.incomeContent}>
+          <View style={styles.incomeHeader}>
+            {/* O badge agora sempre mostra "Receita" */}
+            <View style={[styles.categoryBadge, { backgroundColor: '#D1FAE5' }]}>
+              <Text style={[styles.categoryBadgeText, { color: '#065F46' }]}>Receita</Text>
+            </View>
+            <Text style={styles.incomeAmount}>{formatCurrency(item.amount)}</Text>
+          </View>
+          
+          {/* A descrição da receita (ex: "Salário") agora fica aqui */}
+          {item.description ? (
+            <Text style={styles.incomeDescription}>{item.description}</Text>
+          ) : null}
+
+          <Text style={styles.incomeDate}>{formatDate(item.date)}</Text>
+        </View>
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
             <Ionicons name="pencil" size={20} color="#6B7280" />
@@ -39,8 +67,20 @@ export default function IncomesScreen({ navigation }) {
     <GestureContainer>
       <SafeAreaView style={styles.container}>
         <DateFilter />
-        {/* ... (resto do JSX sem alterações) ... */}
-        {incomes.length === 0 ? (<View style={styles.emptyState}><Ionicons name="cash-outline" size={64} color="#9CA3AF" /><Text style={styles.emptyStateTitle}>Nenhuma receita neste mês</Text><Text style={styles.emptyStateText}>Adicione receitas através da tela de Dashboard.</Text></View>) : (<FlatList data={incomes} renderItem={renderIncomeItem} keyExtractor={item => item.id.toString()} contentContainerStyle={styles.list} />)}
+        {incomes.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="cash-outline" size={64} color="#9CA3AF" />
+            <Text style={styles.emptyStateTitle}>Nenhuma receita neste mês</Text>
+            <Text style={styles.emptyStateText}>Adicione receitas através da tela de Dashboard.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={incomes}
+            renderItem={renderIncomeItem}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={styles.list}
+          />
+        )}
       </SafeAreaView>
     </GestureContainer>
   );

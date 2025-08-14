@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { formatCurrency } from '../utils/format';
 
-export default function SummaryCards({ analysis, formatCurrency }) {
+export default function SummaryCards({ analysis }) {
   return (
     <View style={styles.summaryContainer}>
       <View style={styles.summaryRow}>

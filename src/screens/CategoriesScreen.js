@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinancial } from '../context/FinancialContext';
 
 // Paleta de cores para o seletor
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6B7280'];
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6B7280', '#fceb01ff', '#1ef701ff', '#030585ff','#0d5c02ff','#fc039cff','#6b5802ff','#720202ff'];
 
 export default function CategoriesScreen() {
   const { categories, addCategory, updateCategory, removeCategory } = useFinancial();
@@ -24,7 +24,7 @@ export default function CategoriesScreen() {
 
   const openAddModal = () => {
     setIsEditing(false);
-    setCurrentCategory({ name: '', color: COLORS[0] });
+    setCurrentCategory({ name: '', color: COLORS[0], type: 'essential' });
     setModalVisible(true);
   };
 
@@ -43,9 +43,10 @@ export default function CategoriesScreen() {
       updateCategory(currentCategory.id, {
         name: currentCategory.name,
         color: currentCategory.color,
+        type: currentCategory.type,
       });
     } else {
-      addCategory({ name: currentCategory.name, color: currentCategory.color });
+      addCategory({ name: currentCategory.name, color: currentCategory.color, type: currentCategory.type });
     }
     setModalVisible(false);
     setCurrentCategory(null);
@@ -84,7 +85,8 @@ export default function CategoriesScreen() {
       <FlatList
         data={categories}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
+        // AQUI ESTÁ A CORREÇÃO:
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="pricetags-outline" size={64} color="#9CA3AF" />
@@ -109,7 +111,24 @@ export default function CategoriesScreen() {
               value={currentCategory?.name}
               onChangeText={(text) => setCurrentCategory({ ...currentCategory, name: text })}
             />
-            <Text style={styles.colorLabel}>Cor:</Text>
+            
+            <Text style={styles.label}>Tipo de Gasto</Text>
+            <View style={styles.typeSelector}>
+                <TouchableOpacity 
+                    style={[styles.typeButton, currentCategory?.type === 'essential' && styles.typeButtonSelected]}
+                    onPress={() => setCurrentCategory({ ...currentCategory, type: 'essential' })}
+                >
+                    <Text style={[styles.typeButtonText, currentCategory?.type === 'essential' && styles.typeButtonTextSelected]}>Essencial</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={[styles.typeButton, currentCategory?.type === 'wants' && styles.typeButtonSelected]}
+                    onPress={() => setCurrentCategory({ ...currentCategory, type: 'wants' })}
+                >
+                    <Text style={[styles.typeButtonText, currentCategory?.type === 'wants' && styles.typeButtonTextSelected]}>Desejo Pessoal</Text>
+                </TouchableOpacity>
+            </View>
+
+            <Text style={styles.label}>Cor</Text>
             <View style={styles.colorSelector}>
               {COLORS.map((color) => (
                 <TouchableOpacity
@@ -138,7 +157,6 @@ export default function CategoriesScreen() {
   );
 }
 
-// Estilos... (você pode copiar e colar a folha de estilos completa no final)
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F3F4F6' },
     addButton: { position: 'absolute', bottom: 30, right: 30, backgroundColor: '#5a0394ff', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 8 },
@@ -150,11 +168,16 @@ const styles = StyleSheet.create({
     actionButton: { padding: 8 },
     modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
     modalContainer: { width: '90%', backgroundColor: '#fff', borderRadius: 12, padding: 20 },
-    modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 24 },
     input: { borderWidth: 1, borderColor: '#D1D5DB', padding: 12, borderRadius: 8, marginBottom: 16 },
-    colorLabel: { marginBottom: 8 },
-    colorSelector: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
-    colorOption: { width: 30, height: 30, borderRadius: 15 },
+    label: { marginBottom: 8, fontSize: 14, fontWeight: '600' },
+    typeSelector: { flexDirection: 'row', marginBottom: 16 },
+    typeButton: { flex: 1, padding: 12, borderWidth: 1, borderColor: '#D1D5DB', alignItems: 'center' },
+    typeButtonSelected: { backgroundColor: '#5a0394ff', borderColor: '#5a0394ff' },
+    typeButtonText: { color: '#374151' },
+    typeButtonTextSelected: { color: '#fff', fontWeight: 'bold' },
+    colorSelector: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 },
+    colorOption: { width: 40, height: 40, borderRadius: 20, margin: 4 },
     colorSelected: { borderWidth: 3, borderColor: '#000' },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end' },
     cancelButton: { padding: 12 },

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { formatCurrency } from '../utils/format';
 
-export default function IntelligenceCards({ analysis, formatCurrency }) {
+export default function IntelligenceCards({ analysis }) {
   return (
     <View style={styles.intelligenceRow}>
       <View style={[styles.intelligenceCard, { marginRight: 8 }]}>

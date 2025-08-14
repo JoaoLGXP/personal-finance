@@ -1,3 +1,4 @@
+// src/components/CategoryPickerModal.js
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,9 +24,8 @@ export default function CategoryPickerModal({
           {Array.isArray(categories) && (
             <FlatList
               data={categories.filter(c => c && typeof c === 'object' && c.name !== 'Salário')}
-              keyExtractor={(item, index) =>
-                item && item.id ? item.id.toString() : index.toString()
-              }
+              // AQUI ESTÁ A CORREÇÃO:
+              keyExtractor={(item, index) => `${item.id}-${index}`}
               renderItem={({ item }) => {
                 if (!item || typeof item !== 'object' || !item.name || !item.color) {
                   return null;

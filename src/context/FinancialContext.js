@@ -75,7 +75,29 @@ export function FinancialProvider({ children }) {
         const savedData = await AsyncStorage.getItem('financialData');
         let dataToLoad = savedData ? JSON.parse(savedData) : {};
         if (!dataToLoad.categories || dataToLoad.categories.length === 0) {
-          dataToLoad.categories = [{ id: 1, name: 'Moradia', color: '#3B82F6' }, { id: 2, name: 'Alimentação', color: '#10B981' }, { id: 3, name: 'Transporte', color: '#F59E0B' }, { id: 4, name: 'Salário', color: '#14B8A6' }];
+          dataToLoad.categories = [
+            // Gastos Essenciais
+            { id: 1, name: 'Moradia', color: '#3B82F6', type: 'essential' },
+            { id: 2, name: 'Alimentação', color: '#10B981', type: 'essential' },
+            { id: 3, name: 'Transporte', color: '#F59E0B', type: 'essential' },
+            { id: 4, name: 'Saúde', color: '#EF4444', type: 'essential' },
+            { id: 5, name: 'Educação', color: '#8B5CF6', type: 'essential' },
+            // Desejos Pessoais
+            { id: 6, name: 'Lazer', color: '#EC4899', type: 'wants' },
+            { id: 7, name: 'Outros', color: '#6B7280', type: 'wants' },
+          ];
+        } else {
+          // Migra categorias antigas que não têm o 'type'
+          dataToLoad.categories.forEach(cat => {
+            if (!cat.type) {
+              if (cat.name === 'Salário') {
+                cat.type = 'income';
+              } else {
+                // Assume que categorias antigas são essenciais por padrão
+                cat.type = 'essential';
+              }
+            }
+          });
         }
         if (!dataToLoad.transactions) dataToLoad.transactions = [];
         if (!dataToLoad.recurringTransactions) dataToLoad.recurringTransactions = [];
@@ -104,22 +126,22 @@ export function FinancialProvider({ children }) {
             });
 
             if (!alreadyExists) {
-                const amountForMonth = getAmountForDate(rt, year, month);
-                if (amountForMonth > 0) {
-                    const newTransactionDate = new Date(year, month, rt.dayOfMonth);
-                    const newTransaction = {
-                        type: rt.type,
-                        amount: amountForMonth,
-                        description: rt.description,
-                        categoryId: rt.categoryId,
-                        id: Date.now() + Math.random(),
-                        date: newTransactionDate.toISOString(),
-                        isRecurringInstance: true,
-                        recurringId: rt.id,
-                    };
-                    dataToLoad.transactions.push(newTransaction);
-                    rt.lastInstance = { year, month };
-                }
+              const amountForMonth = getAmountForDate(rt, year, month);
+              if (amountForMonth > 0) {
+                const newTransactionDate = new Date(year, month, rt.dayOfMonth);
+                const newTransaction = {
+                  type: rt.type,
+                  amount: amountForMonth,
+                  description: rt.description,
+                  categoryId: rt.categoryId,
+                  id: Date.now() + Math.random(),
+                  date: newTransactionDate.toISOString(),
+                  isRecurringInstance: true,
+                  recurringId: rt.id,
+                };
+                dataToLoad.transactions.push(newTransaction);
+                rt.lastInstance = { year, month };
+              }
             }
             cursorDate.setMonth(cursorDate.getMonth() + 1);
           }
@@ -149,26 +171,68 @@ export function FinancialProvider({ children }) {
     const allTransactions = state.transactions;
 
     for (let i = 0; i < numberOfMonths; i++) {
-        const date = new Date(state.dateFilter.year, state.dateFilter.month - i, 1);
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const key = `${year}-${month}`;
-        
-        pastTransactions[key] = allTransactions.filter(t => {
-            const tDate = new Date(t.date);
-            return tDate.getFullYear() === year && tDate.getMonth() === month;
-        });
+      const date = new Date(state.dateFilter.year, state.dateFilter.month - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const key = `${year}-${month}`;
+
+      pastTransactions[key] = allTransactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate.getFullYear() === year && tDate.getMonth() === month;
+      });
     }
     return pastTransactions;
   }, [state.transactions, state.dateFilter]);
   // =======================================================
+
+  // ===== NOVA FUNÇÃO DE ANÁLISE DE REGRAS =====
+  const getRulesAnalysis = useCallback(() => {
+    const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expenses = filteredTransactions.filter(t => t.type === 'expense');
+
+    if (totalIncome === 0) return null; // Não faz análise sem renda
+
+    // Mapeamento simplificado de categorias para a regra 50-30-20
+    const mapCategoryToRule = (categoryName) => {
+      const essentials = ['Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação'];
+      const wants = ['Lazer', 'Outros'];
+      if (essentials.includes(categoryName)) return 'necessities';
+      if (wants.includes(categoryName)) return 'wants';
+      return 'goals'; // O resto (Educação, Outros, etc.) entra como metas/poupança
+    };
+
+    const analysis = {
+      necessities: { recommended: 50, spent: 0 },
+      wants: { recommended: 30, spent: 0 },
+      goals: { recommended: 20, spent: 0 },
+    };
+
+    expenses.forEach(expense => {
+      const category = getCategoryById(expense.categoryId);
+      if (category) {
+        const ruleCategory = mapCategoryToRule(category.name);
+        analysis[ruleCategory].spent += expense.amount;
+      }
+    });
+
+    // Calcula o valor restante para a categoria "Metas"
+    const spentOnEssentialsAndWants = analysis.necessities.spent + analysis.wants.spent;
+    analysis.goals.spent = totalIncome - spentOnEssentialsAndWants;
+
+    return {
+      totalIncome,
+      analysis,
+    };
+
+  }, [filteredTransactions, state.categories]);
+  // ===========================================
 
   const addTransaction = useCallback((transactionData) => {
     const transactionDate = new Date(state.dateFilter.year, state.dateFilter.month, new Date().getDate());
     const fullTransaction = { ...transactionData, date: transactionDate.toISOString() };
     dispatch({ type: 'ADD_TRANSACTION', payload: fullTransaction });
   }, [state.dateFilter]);
-  
+
   const addRecurringTransaction = useCallback((rt) => {
     // AQUI ESTAVA O BUG: Estava salvando `rt` em vez de `newRecurrence`
     const newRecurrence = {
@@ -188,7 +252,7 @@ export function FinancialProvider({ children }) {
     };
     dispatch({ type: 'ADD_TRANSACTION', payload: firstInstance });
   }, [state.dateFilter]);
-  
+
   const updateRecurringTransaction = useCallback((id, newAmount, effectiveDate) => {
     const transactionToUpdate = state.recurringTransactions.find(rt => rt.id === id);
     if (!transactionToUpdate) return;
@@ -247,7 +311,8 @@ export function FinancialProvider({ children }) {
     clearAll,
     getFinancialAnalysis,
     getSuggestions,
-    getPastMonthsTransactions
+    getPastMonthsTransactions,
+    getRulesAnalysis,
   };
 
   return <FinancialContext.Provider value={value}>{children}</FinancialContext.Provider>;
